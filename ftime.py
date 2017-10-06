@@ -10,7 +10,10 @@ def leaves(data, names = [], attributes = {}):
     else:
         yield (' '.join([str(n) for n in names]), dict(attributes, **these_attributes))
 
+def multisort(lvs, *keys):
+    return sorted(lvs, key = lambda x: [x[1].get(attr, 0) for attr in keys])
+
 with open('data.yml') as f:
     d = yaml.safe_load(f)
     lvs = leaves(d)
-    [print(i) for i in list(lvs)]
+    [print(i) for i in list(multisort(lvs, '_t', '_d'))]
