@@ -1,0 +1,35 @@
+CSCI442:
+  Project:
+    _d: 10/20
+    Part 1:
+      _d: 10/9
+      Accept file input:
+        _t: 10
+      Classes or structs with instance vars:
+        _t: 20
+      Iterate over event queue in order:
+        _t: 30
+      Makefile:
+        _t: 20
+  HW3:
+    _d: 10/10
+    3.1:
+      _t: 15
+      _d: 10/9
+    3.2:
+      _t: 25
+    3.3:
+      _t: 30
+    3.4:
+      _t: 20
+    3.9:
+      _t: 10
+      _d: 10/8
+    4.2:
+      _t: 10
+      _d: 10/7
+    4.4:
+      _t: 10
+    4.5:
+      _t: 10
+      
