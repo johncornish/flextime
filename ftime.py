@@ -89,7 +89,7 @@ def cli(ctx, f):
 
 @cli.command()
 @click.argument('sort_keys', nargs=-1)
-@click.option('--lim', default=-1)
+@click.option('--lim', default=5)
 @click.pass_obj
 def todo(ft, sort_keys, lim):
     def todo_str(todos):
