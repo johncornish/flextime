@@ -1,19 +1,7 @@
-import yaml, re, dateutil.parser, click
+#! /usr/bin/env python
+import yaml, os, re, dateutil.parser, click
 from functools import reduce
 from datetime import datetime
-
-def add_ordinality(leaf):
-    ordattrs = dict(leaf.get('attrs'))
-    if '_d' in ordattrs:
-        ordattrs.update({'_d': dateutil.parser.parse(ordattrs.get('_d')).toordinal()})
-
-    return dict(leaf, ordattrs = ordattrs)
-
-def mmap(arr, *funcs):
-    def apply_func(acc, f):
-        return map(f, acc)
-
-    return list(reduce(apply_func, funcs, arr))
 
 class TaskLeaf:
     def __init__(self, names, data):
@@ -59,8 +47,10 @@ class FlexTime:
             self.leaves = self.extract_leaves()
 
     def save(self):
-        pass
-        #with open(self.datafile)
+        output = yaml.dump(self.dtree)
+        print(output)
+        with open(self.datafile, 'w') as f:
+            f.write(output)
 
     def extract_leaves(self):
         def rfind_leaves(data, names = [], attributes = {}):
@@ -92,31 +82,37 @@ class FlexTime:
 
 
 @click.group()
-@click.option('-d', default='tasks.yml')
+@click.option('-f', default='tasks.yml')
 @click.pass_context
-def cli(ctx, d):
-    ctx.obj = FlexTime(d)
+def cli(ctx, f):
+    ctx.obj = FlexTime(f)
 
 @cli.command()
 @click.argument('sort_keys', nargs=-1)
+@click.option('--lim', default=-1)
 @click.pass_obj
-def todo(ft, sort_keys):
+def todo(ft, sort_keys, lim):
+    def todo_str(todos):
+        return "\n\n".join(['[{}] {}'.format(i, str(t)) for i, t in todos[:lim]])
+
     def show_todos():
         if len(sort_keys) > 0:
             todos = ft.multisorted(sort_keys)
         else:
             todos = ft.leaf_tuples()
 
-        [print('[{}] {}'.format(i, str(t))) for i, t in todos]
+        os.system('clear')
+        print(todo_str(todos))
         
     while True:
         show_todos()
-        cind = input("Complete: ")
+        cind = input("Complete [<i>/w/Q]: ")
 
         if cind.isdigit():
             ft.complete_task(int(cind))
         else:
-            ft.save()
+            if cind == 'w':
+                ft.save()
             break
             
 
