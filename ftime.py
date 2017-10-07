@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 import yaml, os, re, dateutil.parser, click
 from functools import reduce
 from datetime import datetime
