@@ -17,7 +17,7 @@ class TaskLeaf:
             
         return '({}) {} - {}'.format(
             due_date.strftime(date_format),
-            ' '.join([str(n) for n in self.name_path]),
+            ' | '.join([str(n) for n in self.name_path]),
             self.data.get('_t', 0)
         )
 
