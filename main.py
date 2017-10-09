@@ -2,10 +2,10 @@ import click, os
 from flextime import FlexTime
 
 @click.group()
-@click.option('-f', default='tasks.yml')
+@click.option('--datafile', '-f', default='tasks.yml')
 @click.pass_context
-def cli(ctx, f):
-    ctx.obj = FlexTime(f)
+def cli(ctx, datafile):
+    ctx.obj = FlexTime(datafile)
 
 @cli.command()
 @click.argument('sort_keys', nargs=-1)
