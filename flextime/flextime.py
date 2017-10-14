@@ -46,12 +46,6 @@ class FlexTime:
             #print(yaml.dump(self.dtree))
             self.leaves = self.extract_leaves()
 
-    def save(self):
-        output = yaml.dump(self.dtree)
-        with open(self.datafile, 'w') as f:
-            print(output)
-            f.write(output)
-
     def extract_leaves(self):
         def rfind_leaves(data, names = [], attributes = {}):
             children = [(k,v) for k, v in data.items() if not re.match("^_.*", str(k))]
@@ -79,13 +73,6 @@ class FlexTime:
 
     def multisorted(self, keys):
         return sorted(self.leaf_tuples(), key = lambda x: x[1].to_ord(keys))
-
-    def node_from_path(path):
-        node = self.dtree
-        for p in path:
-            node = node[p]
-
-        return node
 
     def guess_path(self, args):
         def build_path(acc, word):
