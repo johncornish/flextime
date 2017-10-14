@@ -36,7 +36,7 @@ def todo(ft, sort_keys, lim):
             break
 
 @cli.command()
-@click.argument('path', nargs=-1)
+@click.argument('words', nargs=-1)
 @click.pass_obj
-def add(ft, path):
-    print(path)
+def add(ft, words):
+    print(ft.guess_path(list(words)))

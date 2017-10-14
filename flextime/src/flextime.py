@@ -79,3 +79,24 @@ class FlexTime:
 
     def multisorted(self, keys):
         return sorted(self.leaf_tuples(), key = lambda x: x[1].to_ord(keys))
+
+    def node_from_path(path):
+        node = self.dtree
+        for p in path:
+            node = node[p]
+
+        return node
+
+    def guess_path(self, args):
+        def build_path(acc, word):
+            tree, path_parts = acc
+
+            path_parts[-1].append(word)
+
+            key = ' '.join(path_parts[-1])
+            if key in tree:
+                tree = tree[key]
+                path_parts.append([])
+
+            return (tree, path_parts)
+        return reduce(build_path, args, (self.dtree, [[]]))
