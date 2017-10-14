@@ -34,3 +34,9 @@ def todo(ft, sort_keys, lim):
             if cind == 'w':
                 ft.save()
             break
+
+@cli.command()
+@click.argument('path', nargs=-1)
+@click.pass_obj
+def add(ft, path):
+    print(path)

@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='flextime',
@@ -11,6 +11,6 @@ setup(
     ],
     entry_points='''
     [console_scripts]
-    ft=main:cli
+    ft=flextime:cli
     ''',
 )
