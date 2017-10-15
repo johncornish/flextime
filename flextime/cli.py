@@ -1,11 +1,12 @@
 import click, os
-from flextime import FlexTime
+from flextime import TaskTree
+from flextime.interface import Add
 
 @click.group()
 @click.option('--datafile', '-f', default='tasks.yml')
 @click.pass_context
 def cli(ctx, datafile):
-    ctx.obj = FlexTime(datafile)
+    ctx.obj = {'tasktree': TaskTree(datafile)}
 
 @cli.command()
 @click.argument('sort_keys', nargs=-1)
@@ -38,5 +39,24 @@ def todo(ft, sort_keys, lim):
 @cli.command()
 @click.argument('words', nargs=-1)
 @click.pass_obj
-def add(ft, words):
-    print(ft.guess_path(list(words)))
+def add(obj, words):
+    a = Add(obj['tasktree'])
+    c = ''
+    while c != 'q':
+        a.show_page()
+        c = click.getchar()
+        click.echo()
+        
+        if c.isdigit():
+            a.select_key(c)
+        elif c == 'n':
+            a.next_page()
+        elif c == 'p':
+            a.prev_page()
+        elif c == 'u':
+            a.up_level()
+        elif c == 'c':
+            a.create()
+        elif c == 'w':
+            obj['tasktree'].save()
+            break
