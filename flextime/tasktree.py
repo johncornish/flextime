@@ -74,12 +74,16 @@ class TaskTree:
 
         return list(recursive_find(self._datatree))
 
+    def normalize_tree(self):
+        pass
+        
     def keys_from_path(self, path):
         return list(self.branch_from_path(path).keys())
                     
     def merge_branch(self, path, data):
         node = self.branch_from_path(path)
         node.update(data)
+        self.normalize_tree()
 
     def delete_branch(self, path):
         node = self.branch_from_path(path[:-1])

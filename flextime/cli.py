@@ -40,23 +40,4 @@ def todo(ft, sort_keys, lim):
 @click.argument('words', nargs=-1)
 @click.pass_obj
 def add(obj, words):
-    a = Add(obj['tasktree'])
-    c = ''
-    while c != 'q':
-        a.show_page()
-        c = click.getchar()
-        click.echo()
-        
-        if c.isdigit():
-            a.select_key(c)
-        elif c == 'n':
-            a.next_page()
-        elif c == 'p':
-            a.prev_page()
-        elif c == 'u':
-            a.up_level()
-        elif c == 'c':
-            a.create()
-        elif c == 'w':
-            obj['tasktree'].save()
-            break
+    Add(obj['tasktree']).run()

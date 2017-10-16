@@ -1,18 +1,20 @@
 import click
 import yaml
+from datetime import date
 
 class Menu:
-    def __init__(self, pagify=True, input_type='char'):
+    def __init__(self, tasktree, pagify=True, input_type='char'):
         self._exit = False
 
+        self._tasktree = tasktree
         self.pagify = pagify
         self.input_type = input_type
-        self.items = []
+        self._items = []
         self.page_offset = 0
         self.char_options = {
             'q': ('[q]uit', self.set_quit),
-            #'n': ('[n]ext page', self.next_page, self.has_next_page),
-            'n': ('[n]ext page', self.next_page, lambda: True),
+            'w': ('[w]rite/quit', self.write_quit),
+            'n': ('[n]ext page', self.next_page, self.has_next_page),
             'p': ('[p]rev page', self.prev_page, self.has_prev_page),
         }
         self.char_option_display = ['qw', 'pn']
@@ -20,7 +22,9 @@ class Menu:
 
     def run(self):
         while not self._exit:
+            click.clear()
             click.echo(self.option_str())
+            click.echo()
             click.echo(self.item_str())
             click.echo('> ', nl=False)
             if self.input_type == 'char':
@@ -28,15 +32,22 @@ class Menu:
                 click.echo()
             else:
                 self.handle_option(input())
+
+    def write_quit(self, *args):
+        self._tasktree.save()
+        self.set_quit()
                 
     def handle_option(self, choice):
         if choice in self.char_options:
-            self.char_options[choice][1](choice)
+            name, f, *rest = self.char_options[choice]
+            if len(rest) == 0 or (len(rest) > 0 and rest[0]()):
+                f(choice)
+                
         else:
             for o in self.cond_options:
                 check, f = o
-                if check(o):
-                    f(o)
+                if check(choice):
+                    f(choice)
             
     def reset_offset(self):
         self.page_offset = 0
@@ -51,17 +62,29 @@ class Menu:
         return self.page_offset > 0
 
     def has_next_page(self):
-        num_items = len(self.items)
+        num_items = len(self._items)
         return num_items > (self.page_offset + 1) * 10
 
+    def get_item(self, page_item_index):
+        if self.pagify:
+            item_index = int(page_item_index) + self.page_offset*10
+        else:
+            item_index = int(page_item_index)
+
+        if item_index < len(self._items):
+            return self._items[item_index]
+        else:
+            return False
+
+        
     def get_page_items(self):
         start = 0 + 10*self.page_offset
         end = 10 + 10*self.page_offset
 
-        if start < len(self.items):
-            return self.items[start:end]
+        if start < len(self._items):
+            return self._items[start:end]
         else:
-            return self.items
+            return self._items
 
     def option_str(self):
         def option_to_str(o):
@@ -82,7 +105,7 @@ class Menu:
         ])
                 
     def item_str(self):
-        items = self.get_page_items() if self.pagify else self.items
+        items = self.get_page_items() if self.pagify else self._items
         return "\n".join(["[{}] {}".format(i, item) for i, item in enumerate(items)])
     
     def prev_page(self, *args):
@@ -95,50 +118,56 @@ class Menu:
 
 class Add(Menu):
     def __init__(self, tasktree, **kwargs):
-        super(Add, self).__init__(**kwargs)
-        self._tasktree = tasktree
+        super(Add, self).__init__(tasktree, **kwargs)
+        self.char_options.update({
+            'a': ('easy [a]dd', self.add_interactive),
+            'y': ('add [y]aml', self.add_yaml),
+        })
+        self.char_option_display = [
+            'qway',
+            'pn',
+        ]
 
+        self._path = []
         self.reset_items()
 
     def reset_items(self):
-        self.items = self._tasktree.keys_from_path(self._path)
+        self._items = self._tasktree.keys_from_path(self._path)
         
     def select_item(self, page_item_index):
-        key_index = int(key_index) + self._page_offset*10
-        if key_index < len(self._keys):
-            key = self._keys[key_index]
+        item = self.get_item(page_item_index)
         
-            self._path.append(key)
-
+        if item:
+            self._path.append(item)
             self.reset_offset()
-            self.reset_keys()
+            self.reset_items()
  
     def up_level(self):
         if len(self._path) > 0:
             self._path.pop()
             
         self.reset_offset()
-        self.reset_keys()
+        self.reset_items()
 
-    def create(self):
+    def add_interactive(self, *args):
+        click.echo()
+        title = click.prompt('Task name')
+        due = click.prompt('Due date', default=date.today())
+        time = click.prompt('Estimated time', default='none')
+        new_branch = {
+            title: {
+                '_d': due
+            }
+        }
+
+        if time != 'none':
+            new_branch.update({'_t': time})
+
+        self._tasktree.merge_branch(self._path, new_branch)
+        
+    def add_yaml(self, *args):
         task_str = click.edit()
         if task_str is not None:
             data = yaml.safe_load(task_str)
             self._tasktree.merge_branch(self._path, data)
-            self.reset_keys()
-
-    def show_page(self):
-        click.clear()
-        for i, k in enumerate(self.get_page()):
-            click.echo("[{}] {}".format(str(i), str(k)))
-
-        click.echo()
-        menu_line = '[u]p a level | [c]reate new task | [w]rite/quit | [q]uit'
-        if self.has_prev_page():
-            menu_line += ' | <[p]'
-
-        if self.has_next_page():
-            menu_line += ' | [n]>'
-            
-        click.echo(menu_line)
-        click.echo('> ', nl=False)
+            self.reset_items()
