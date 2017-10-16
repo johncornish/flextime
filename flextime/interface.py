@@ -153,16 +153,15 @@ class Add(Menu):
     def add_interactive(self, *args):
         click.echo()
         title = click.prompt('Task name')
-        due = click.prompt('Due date', default=date.today())
+        due = click.prompt('Due date', default='none')
         time = click.prompt('Estimated time', default='none')
-        new_branch = {
-            title: {
-                '_d': due
-            }
-        }
+        new_branch = {title: {}}
+
+        if due != 'none':
+            new_branch[title]['_d'] = due
 
         if time != 'none':
-            new_branch.update({'_t': time})
+            new_branch[title]['_t'] = time
 
         self._tasktree.merge_branch(self._path, new_branch)
         self.reset_items()
