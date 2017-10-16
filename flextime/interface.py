@@ -122,10 +122,11 @@ class Add(Menu):
         self.char_options.update({
             'a': ('easy [a]dd', self.add_interactive),
             'y': ('add [y]aml', self.add_yaml),
+            'u': ('[u]p a level', self.up_level),
         })
         self.char_option_display = [
             'qway',
-            'pn',
+            'upn',
         ]
 
         self._path = []
@@ -142,7 +143,7 @@ class Add(Menu):
             self.reset_offset()
             self.reset_items()
  
-    def up_level(self):
+    def up_level(self, *args):
         if len(self._path) > 0:
             self._path.pop()
             
@@ -164,6 +165,7 @@ class Add(Menu):
             new_branch.update({'_t': time})
 
         self._tasktree.merge_branch(self._path, new_branch)
+        self.reset_items()
         
     def add_yaml(self, *args):
         task_str = click.edit()

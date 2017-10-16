@@ -1,22 +1,25 @@
 import yaml, re, dateutil.parser
 from os.path import isfile
-from datetime import datetime
+from datetime import datetime, date
 from functools import reduce
 
 class TaskLeaf:
+    def date_to_str(d):
+        date_format = '%m-%d-%Y'
+        return d.strftime(date_format)
+        
     def __init__(self, path, data):
         self.path = path
         self.data = data
 
     def __str__(self):
-        date_format = "%m-%d-%y"
         if '_d' in self.data:
             due_date = dateutil.parser.parse(self.data.get('_d'))
         else:
             due_date = datetime.today()
 
         return '({}) {} - {}'.format(
-            due_date.strftime(date_format),
+            TaskLeaf.date_to_str(due_date),
             ' | '.join([str(n) for n in self.path]),
             self.data.get('_t', 0)
         )
@@ -54,11 +57,15 @@ class TaskTree:
             self._datatree = {}
 
     def save(self):
-        output = self.dump()
-        with open(self._datafile, 'w') as f:
-            f.write(output)
+        if self.normalize_tree():
+            output = str(self)
+            with open(self._datafile, 'w') as f:
+                f.write(output)
+        else:
+            print('Tree could not be normalized; aborting save and dumping tree.')
+            print(str(self))
 
-    def dump(self):
+    def __str__(self):
         return yaml.dump(self._datatree)
 
     def leaves(self):
@@ -75,15 +82,56 @@ class TaskTree:
         return list(recursive_find(self._datatree))
 
     def normalize_tree(self):
-        pass
-        
+        def normalize_props(path, props):
+            if '_d' in props:
+                due_date = props['_d']
+                if due_date == 'today':
+                    due_date = datetime.today()
+                elif isinstance(due_date, date):
+                    due_date = due_date
+                else:
+                    try:
+                        due_date = dateutil.parser.parse(due_date)
+                    except ValueError:
+                        return False
+                        
+                props['_d'] = TaskLeaf.date_to_str(due_date)
+
+            if '_t' in props:
+                time = props['_t']
+                if not time.isdigit():
+                    return False
+                
+                props['_t'] = int(time)
+                    
+            self.branch_from_path(path).update(props)
+            return True
+            
+        def recursive_normalize(paths):
+            for path in paths:
+                props = self.props_from_path(path)
+                if len(props.keys()) > 0:
+                    yield normalize_props(path, props)
+                    
+                sub_keys = self.keys_from_path(path)
+                if len(sub_keys) > 0:
+                    yield from recursive_normalize([path + [k] for k in sub_keys])
+
+        return all(recursive_normalize([[]]))
+       
+    def props_from_path(self, path):
+        return {k: v for k, v in self.branch_from_path(path).items() if re.match('^_.*', str(k))}
+
     def keys_from_path(self, path):
-        return list(self.branch_from_path(path).keys())
+        return [k for k in self.branch_from_path(path).keys() if not re.match('^_.*', str(k))]
                     
     def merge_branch(self, path, data):
         node = self.branch_from_path(path)
         node.update(data)
-        self.normalize_tree()
+        if not self.normalize_tree():
+            print('Could not normalize tree after last insert; aborting and dumping tree.')
+            print(str(self))
+            exit()
 
     def delete_branch(self, path):
         node = self.branch_from_path(path[:-1])
@@ -93,7 +141,7 @@ class TaskTree:
                 del node[delete_key]
             else:
                 print("{} not found in tree:".format(' > '.join(map(str, path))))
-                print(self.dump())
+                print(str(self))
 
     def branch_from_path(self, path):
         node = self._datatree
