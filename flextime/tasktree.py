@@ -57,13 +57,10 @@ class TaskTree:
             self._datatree = {}
 
     def save(self):
-        if self.normalize_tree():
-            output = str(self)
-            with open(self._datafile, 'w') as f:
-                f.write(output)
-        else:
-            print('Tree could not be normalized; aborting save and dumping tree.')
-            print(str(self))
+        self.normalize_tree()
+        output = str(self)
+        with open(self._datafile, 'w') as f:
+            f.write(output)
 
     def __str__(self):
         return yaml.dump(self._datatree)
@@ -85,42 +82,47 @@ class TaskTree:
         return list(recursive_find(self._datatree))
 
     def normalize_tree(self):
-        def normalize_props(path, props):
-            if '_d' in props:
-                due_date = props['_d']
-                if due_date == 'today':
-                    due_date = datetime.today()
-                elif isinstance(due_date, date):
-                    due_date = due_date
-                else:
-                    try:
-                        due_date = dateutil.parser.parse(due_date)
-                    except ValueError:
-                        return False
-                        
-                props['_d'] = TaskLeaf.date_to_str(due_date)
+        def normalize_props(path):
+            failed_props = []
+            props = self.props_from_path(path)
+            if len(props) > 0:
+                if '_d' in props:
+                    due_date = props['_d']
+                    if due_date == 'today':
+                        due_date = datetime.today()
+                    elif isinstance(due_date, date):
+                        due_date = due_date
+                    else:
+                        try:
+                            due_date = dateutil.parser.parse(due_date)
+                            props['_d'] = TaskLeaf.date_to_str(due_date)
+                        except ValueError:
+                            failed_props.append('_d')
 
-            if '_t' in props:
-                time = props['_t']
-                if isinstance(time, str) and not time.isdigit():
-                    return False
-                
-                props['_t'] = int(time)
-                    
-            self.branch_from_path(path).update(props)
-            return True
-            
+                if '_t' in props:
+                    time = props['_t']
+                    if isinstance(time, str) and not time.isdigit():
+                        failed_props.append('_t')
+                    else:
+                        props['_t'] = int(time)
+
+                current_branch = self.branch_from_path(path)
+                for p in failed_props:
+                    print("Failed to normalize value '{}' of property '{}' at '{}'; dropping.".format(str(props[p]), p, ' > '.join(map(str, path))))
+                    del props[p]
+                    del current_branch[p]
+
+                current_branch.update(props)
+
         def recursive_normalize(paths):
             for path in paths:
-                props = self.props_from_path(path)
-                if len(props.keys()) > 0:
-                    yield normalize_props(path, props)
+                normalize_props(path)
                     
                 sub_keys = self.keys_from_path(path)
                 if len(sub_keys) > 0:
-                    yield from recursive_normalize([path + [k] for k in sub_keys])
-
-        return all(recursive_normalize([[]]))
+                    recursive_normalize([path + [k] for k in sub_keys])
+                    
+        recursive_normalize([[]])
        
     def props_from_path(self, path):
         return {k: v for k, v in self.branch_from_path(path).items() if re.match('^_.*', str(k))}
@@ -131,10 +133,7 @@ class TaskTree:
     def merge_branch(self, path, data):
         node = self.branch_from_path(path)
         node.update(data)
-        if not self.normalize_tree():
-            print('Could not normalize tree after last insert; aborting and dumping tree.')
-            print(str(self))
-            exit()
+        self.normalize_tree()
 
     def delete_branch(self, path):
         node = self.branch_from_path(path[:-1])
