@@ -106,7 +106,7 @@ class Menu:
                 
     def item_str(self):
         items = self.get_page_items() if self.pagify else self._items
-        return "\n".join(["[{}] {}".format(i, item) for i, item in enumerate(items)])
+        return "\n".join(["[{}] {}".format(i, str(item)) for i, item in enumerate(items)])
     
     def prev_page(self, *args):
         if self.has_prev_page():
@@ -152,23 +152,45 @@ class Add(Menu):
 
     def add_interactive(self, *args):
         click.echo()
-        title = click.prompt('Task name')
-        due = click.prompt('Due date', default='none')
-        time = click.prompt('Estimated time', default='none')
-        new_branch = {title: {}}
+        title = click.prompt('Task name', default='cancel')
+        if title != 'cancel':
+            due = click.prompt('Due date', default='none')
+            time = click.prompt('Estimated time', default='none')
+            new_branch = {title: {}}
 
-        if due != 'none':
-            new_branch[title]['_d'] = due
+            if due != 'none':
+                new_branch[title]['_d'] = due
 
-        if time != 'none':
-            new_branch[title]['_t'] = time
+            if time != 'none':
+                new_branch[title]['_t'] = time
 
-        self._tasktree.merge_branch(self._path, new_branch)
-        self.reset_items()
+            self._tasktree.merge_branch(self._path, new_branch)
+            self.reset_items()
         
     def add_yaml(self, *args):
         task_str = click.edit()
         if task_str is not None:
             data = yaml.safe_load(task_str)
             self._tasktree.merge_branch(self._path, data)
+            self.reset_items()
+
+class Show(Menu):
+    def __init__(self, tasktree, sort_keys, **kwargs):
+        super(Show, self).__init__(tasktree, **kwargs)
+        self.char_option_display = [
+            'qw',
+            'pn',
+        ]
+
+        self._sort_keys = sort_keys
+        self.reset_items()
+
+    def reset_items(self):
+        self._items = self._tasktree.sorted_leaves(self._sort_keys)
+        
+    def select_item(self, page_item_index):
+        leaf = self.get_item(page_item_index)
+        
+        if leaf:
+            self._tasktree.delete_branch(leaf.path)
             self.reset_items()

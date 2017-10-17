@@ -14,20 +14,20 @@ class TaskLeaf:
 
     def __str__(self):
         if '_d' in self.data:
-            due_date = dateutil.parser.parse(self.data.get('_d'))
+            due_str = TaskLeaf.date_to_str(dateutil.parser.parse(self.data.get('_d')))
         else:
-            due_date = datetime.today()
+            due_str = 'No due date'
 
-        return '({}) {} - {}'.format(
-            TaskLeaf.date_to_str(due_date),
-            ' | '.join([str(n) for n in self.path]),
+        return '({}) {} - {} mins'.format(
+            due_str,
+            ' > '.join([str(n) for n in self.path]),
             self.data.get('_t', 0)
         )
 
     def toordinal(self, attrs):
         def get_ord(attr):
             val = 0
-            attr_key = '_' + re.sub('^', '', attr)
+            attr_key = '_' + re.sub('\^', '', attr)
             if attr_key in self.data:
                 if attr_key == '_d':
                     val = dateutil.parser.parse(self.data.get('_d')).toordinal()
@@ -68,6 +68,9 @@ class TaskTree:
     def __str__(self):
         return yaml.dump(self._datatree)
 
+    def sorted_leaves(self, sort_keys):
+        return sorted(self.leaves(), key = lambda x: x.toordinal(sort_keys))
+        
     def leaves(self):
         def recursive_find(data, path = [], attrs = {}):
             children = [(k,v) for k, v in data.items() if not re.match("^_.*", str(k))]
@@ -99,7 +102,7 @@ class TaskTree:
 
             if '_t' in props:
                 time = props['_t']
-                if not time.isdigit():
+                if isinstance(time, str) and not time.isdigit():
                     return False
                 
                 props['_t'] = int(time)
