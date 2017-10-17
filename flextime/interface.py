@@ -121,7 +121,7 @@ class Add(Menu):
         super(Add, self).__init__(tasktree, **kwargs)
         self.char_options.update({
             'a': ('easy [a]dd', self.add_interactive),
-            'y': ('add [y]aml', self.add_yaml),
+            'y': ('edit [y]aml', self.edit_yaml),
             'u': ('[u]p a level', self.up_level),
         })
         self.char_option_display = [
@@ -167,8 +167,8 @@ class Add(Menu):
             self._tasktree.merge_branch(self._path, new_branch)
             self.reset_items()
         
-    def add_yaml(self, *args):
-        task_str = click.edit()
+    def edit_yaml(self, *args):
+        task_str = click.edit(yaml.dump(self._tasktree.branch_from_path(self._path)))
         if task_str is not None:
             data = yaml.safe_load(task_str)
             self._tasktree.merge_branch(self._path, data)
