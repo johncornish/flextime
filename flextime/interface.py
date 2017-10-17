@@ -1,6 +1,9 @@
 import click
 import yaml
+import flextime
+
 from datetime import date
+from functools import reduce
 
 class Menu:
     def __init__(self, tasktree, pagify=True, input_type='char'):
@@ -117,20 +120,44 @@ class Menu:
             self.page_offset += 1
 
 class Add(Menu):
-    def __init__(self, tasktree, **kwargs):
+    def __init__(self, tasktree, merge_files, **kwargs):
         super(Add, self).__init__(tasktree, **kwargs)
         self.char_options.update({
             'a': ('easy [a]dd', self.add_interactive),
             'y': ('edit [y]aml', self.edit_yaml),
+            'm': ('[m]erge files at current path', self.merge_files, self.merge_files_present),
             'u': ('[u]p a level', self.up_level),
         })
+
         self.char_option_display = [
-            'qway',
+            'qwaym',
             'upn',
         ]
 
+        self._merge_files = merge_files
         self._path = []
         self.reset_items()
+
+    def merge_files_present(self):
+       return len(self._merge_files) > 0
+
+    def merge_files(self, *args):
+        if self.merge_files_present():
+            merger = reduce(
+                lambda acc, f: {**acc, **flextime.TaskTree.file_to_dict(f)},
+                self._merge_files,
+                {}
+            )
+
+            click.echo('Current tree:')
+            click.echo(flextime.TaskTree.dump_dict(self._tasktree.branch_from_path(self._path)))
+            click.echo('Tree from files:')
+            click.echo(flextime.TaskTree.dump_dict(merger))
+
+            if click.confirm('Really merge?'):
+                self._tasktree.merge_branch(self._path, merger)
+                self._merge_files = []
+                self.reset_items()
 
     def reset_items(self):
         self._items = self._tasktree.keys_from_path(self._path)
@@ -173,7 +200,7 @@ class Add(Menu):
             data = yaml.safe_load(task_str)
             self._tasktree.merge_branch(self._path, data)
             self.reset_items()
-
+    
 class Show(Menu):
     def __init__(self, tasktree, sort_keys, **kwargs):
         super(Show, self).__init__(tasktree, **kwargs)

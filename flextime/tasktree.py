@@ -50,12 +50,21 @@ class TaskTree:
             self._datafile = datafile
 
         if isfile(self._datafile):
-            with open(self._datafile) as f:
-                self._datatree = yaml.safe_load(f)
+            self._datatree = TaskTree.file_to_dict(self._datafile)
         else:
             print("{} not found. It will be created on save.".format(self._datafile))
             self._datatree = {}
 
+    def dump_dict(d):
+        return yaml.dump(d)
+    
+    def file_to_dict(filename):
+        if isfile(filename):
+            with open(filename) as f:
+                return yaml.safe_load(f)
+        else:
+            print("{} not found; skipping.".format(filename))
+            
     def save(self):
         self.normalize_tree()
         output = str(self)
