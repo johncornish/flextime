@@ -56,7 +56,7 @@ class TaskTree:
             self._datatree = {}
 
     def dump_dict(d):
-        return yaml.dump(d)
+        return yaml.dump(d, default_flow_style=False)
     
     def file_to_dict(filename):
         if isfile(filename):
@@ -72,7 +72,7 @@ class TaskTree:
             f.write(output)
 
     def __str__(self):
-        return yaml.dump(self._datatree)
+        return TaskTree.dump_dict(self._datatree)
 
     def sorted_leaves(self, sort_keys):
         return sorted(self.leaves(), key = lambda x: x.toordinal(sort_keys))
