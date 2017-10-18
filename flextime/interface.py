@@ -120,7 +120,7 @@ class Menu:
             self.page_offset += 1
 
 class Add(Menu):
-    def __init__(self, tasktree, merge_files, **kwargs):
+    def __init__(self, tasktree, path, merge_files, **kwargs):
         super(Add, self).__init__(tasktree, **kwargs)
         self.char_options.update({
             'a': ('easy [a]dd', self.add_interactive),
@@ -135,7 +135,7 @@ class Add(Menu):
         ]
 
         self._merge_files = merge_files
-        self._path = []
+        self._path = flextime.utils.guess_path(tasktree.tree(), path) if len(path) > 0 else []
         self.reset_items()
 
     def merge_files_present(self):
@@ -159,6 +159,9 @@ class Add(Menu):
                 self._merge_files = []
                 self.reset_items()
 
+    def option_str(self):
+        return "Path: {}\n{}".format(' > '.join(self._path), super(Add, self).option_str())
+        
     def reset_items(self):
         self._items = self._tasktree.keys_from_path(self._path)
         

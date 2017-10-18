@@ -15,7 +15,8 @@ def show(obj, sort_keys):
     Show(obj['tasktree'], sort_keys).run()
 
 @cli.command()
-@click.argument('merge_files', nargs=-1)
+@click.argument('path', nargs=-1)
+@click.option('-m', '--merge-files', multiple=True)
 @click.pass_obj
-def add(obj, merge_files):
-    Add(obj['tasktree'], merge_files).run()
+def add(obj, path, merge_files):
+    Add(obj['tasktree'], path, merge_files).run()

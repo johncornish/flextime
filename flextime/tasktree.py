@@ -65,6 +65,9 @@ class TaskTree:
         else:
             print("{} not found; skipping.".format(filename))
             
+    def tree(self):
+        return self._datatree
+    
     def save(self):
         self.normalize_tree()
         output = str(self)
