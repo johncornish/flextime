@@ -195,7 +195,7 @@ class Add(Menu):
             self.reset_items()
         
     def edit_yaml(self, *args):
-        task_str = click.edit(yaml.dump(self._tasktree.branch_from_path(self._path)))
+        task_str = click.edit(flextime.TaskTree.dump_dict(self._tasktree.branch_from_path(self._path)))
         if task_str is not None:
             data = yaml.safe_load(task_str)
             self._tasktree.merge_branch(self._path, data)
