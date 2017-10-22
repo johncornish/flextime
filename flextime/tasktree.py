@@ -1,6 +1,6 @@
 import yaml, re, dateutil.parser
 from os.path import isfile
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from functools import reduce
 
 class TaskLeaf:
@@ -54,6 +54,8 @@ class TaskTree:
         else:
             print("{} not found. It will be created on save.".format(self._datafile))
             self._datatree = {}
+            
+        self.normalize_tree()
 
     def dump_dict(d):
         return yaml.dump(d, default_flow_style=False)
@@ -102,14 +104,14 @@ class TaskTree:
                     due_date = props['_d']
                     if due_date == 'today':
                         due_date = datetime.today()
-                    elif isinstance(due_date, date):
-                        due_date = due_date
-                    else:
+                    elif due_date == 'tomorrow':
+                        due_date = datetime.today() + timedelta(days=1)
+                    elif not isinstance(due_date, date):
                         try:
                             due_date = dateutil.parser.parse(due_date)
-                            props['_d'] = TaskLeaf.date_to_str(due_date)
                         except ValueError:
                             failed_props.append('_d')
+                    props['_d'] = TaskLeaf.date_to_str(due_date)
 
                 if '_t' in props:
                     time = props['_t']

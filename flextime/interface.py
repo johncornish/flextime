@@ -8,19 +8,19 @@ from functools import reduce
 class Menu:
     def __init__(self, tasktree, pagify=True, input_type='char'):
         self._exit = False
+        self._unsaved = False
 
-        self._tasktree = tasktree
+        self.tasktree = tasktree
         self.pagify = pagify
         self.input_type = input_type
         self._items = []
         self.page_offset = 0
         self.char_options = {
             'q': ('[q]uit', self.set_quit),
-            'w': ('[w]rite/quit', self.write_quit),
+            'w': ('[w]rite unsaved changes', self.write, self.unsaved_changes),
             'n': ('[n]ext page', self.next_page, self.has_next_page),
             'p': ('[p]rev page', self.prev_page, self.has_prev_page),
         }
-        self.char_option_display = ['qw', 'pn']
         self.cond_options = [(lambda x: x.isdigit(), self.select_item)]
 
     def run(self):
@@ -36,15 +36,15 @@ class Menu:
             else:
                 self.handle_option(input())
 
-    def write_quit(self, *args):
-        self._tasktree.save()
-        self.set_quit()
+    def write(self):
+        self.tasktree.save()
+        self._unsaved = False
                 
     def handle_option(self, choice):
         if choice in self.char_options:
             name, f, *rest = self.char_options[choice]
             if len(rest) == 0 or (len(rest) > 0 and rest[0]()):
-                f(choice)
+                f()
                 
         else:
             for o in self.cond_options:
@@ -55,6 +55,12 @@ class Menu:
     def reset_offset(self):
         self.page_offset = 0
 
+    def unsaved_changes(self):
+        return self._unsaved
+    
+    def set_unsaved(self):
+        self._unsaved = True
+        
     def set_quit(self, *args):
         self._exit = True
 
@@ -111,11 +117,11 @@ class Menu:
         items = self.get_page_items() if self.pagify else self._items
         return "\n".join(["[{}] {}".format(i, str(item)) for i, item in enumerate(items)])
     
-    def prev_page(self, *args):
+    def prev_page(self):
         if self.has_prev_page():
             self.page_offset -= 1
 
-    def next_page(self, *args):
+    def next_page(self):
         if self.has_next_page():
             self.page_offset += 1
 
@@ -130,7 +136,7 @@ class Add(Menu):
         })
 
         self.char_option_display = [
-            'qwaym',
+            'wqaym',
             'upn',
         ]
 
@@ -141,7 +147,7 @@ class Add(Menu):
     def merge_files_present(self):
        return len(self._merge_files) > 0
 
-    def merge_files(self, *args):
+    def merge_files(self):
         if self.merge_files_present():
             merger = reduce(
                 lambda acc, f: {**acc, **flextime.TaskTree.file_to_dict(f)},
@@ -150,20 +156,21 @@ class Add(Menu):
             )
 
             click.echo('Current tree:')
-            click.echo(flextime.TaskTree.dump_dict(self._tasktree.branch_from_path(self._path)))
+            click.echo(flextime.TaskTree.dump_dict(self.tasktree.branch_from_path(self._path)))
             click.echo('Tree from files:')
             click.echo(flextime.TaskTree.dump_dict(merger))
 
             if click.confirm('Really merge?'):
-                self._tasktree.merge_branch(self._path, merger)
+                self.tasktree.merge_branch(self._path, merger)
                 self._merge_files = []
                 self.reset_items()
+                self.set_unsaved()
 
     def option_str(self):
         return "Path: {}\n{}".format(' > '.join(self._path), super(Add, self).option_str())
         
     def reset_items(self):
-        self._items = self._tasktree.keys_from_path(self._path)
+        self._items = self.tasktree.keys_from_path(self._path)
         
     def select_item(self, page_item_index):
         item = self.get_item(page_item_index)
@@ -173,14 +180,14 @@ class Add(Menu):
             self.reset_offset()
             self.reset_items()
  
-    def up_level(self, *args):
+    def up_level(self):
         if len(self._path) > 0:
             self._path.pop()
             
         self.reset_offset()
         self.reset_items()
 
-    def add_interactive(self, *args):
+    def add_interactive(self):
         click.echo()
         title = click.prompt('Task name', default='cancel')
         if title != 'cancel':
@@ -194,33 +201,44 @@ class Add(Menu):
             if time != 'none':
                 new_branch[title]['_t'] = time
 
-            self._tasktree.merge_branch(self._path, new_branch)
+            self.tasktree.merge_branch(self._path, new_branch)
             self.reset_items()
+            self.set_unsaved()
         
-    def edit_yaml(self, *args):
-        task_str = click.edit(flextime.TaskTree.dump_dict(self._tasktree.branch_from_path(self._path)))
+    def edit_yaml(self):
+        task_str = click.edit(flextime.TaskTree.dump_dict(self.tasktree.branch_from_path(self._path)))
         if task_str is not None:
             data = yaml.safe_load(task_str)
-            self._tasktree.merge_branch(self._path, data)
+            self.tasktree.merge_branch(self._path, data)
             self.reset_items()
+            self.set_unsaved()
     
 class Show(Menu):
     def __init__(self, tasktree, sort_keys, **kwargs):
         super(Show, self).__init__(tasktree, **kwargs)
+        self.char_options['a'] = ('run [a]dd menu', self.run_add)
         self.char_option_display = [
-            'qw',
+            'wqa',
             'pn',
         ]
 
         self._sort_keys = sort_keys
         self.reset_items()
 
+    def run_add(self):
+        a = Add(self.tasktree, [], [])
+        a.run()
+        self.tasktree = a.tasktree
+        self.set_unsaved()
+        self.reset_items()
+        
     def reset_items(self):
-        self._items = self._tasktree.sorted_leaves(self._sort_keys)
+        self._items = self.tasktree.sorted_leaves(self._sort_keys)
         
     def select_item(self, page_item_index):
         leaf = self.get_item(page_item_index)
         
         if leaf:
-            self._tasktree.delete_branch(leaf.path)
+            self.tasktree.delete_branch(leaf.path)
             self.reset_items()
+            self.set_unsaved()
