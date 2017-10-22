@@ -231,9 +231,12 @@ class Show(Menu):
 
     def run_add(self):
         a = Add(self.tasktree, [], [])
+        if self.unsaved_changes():
+            a.set_unsaved()
         a.run()
+
         self.tasktree = a.tasktree
-        self.set_unsaved()
+        self._unsaved = a.unsaved_changes()
         self.reset_items()
         
     def reset_items(self):
