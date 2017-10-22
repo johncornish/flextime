@@ -167,7 +167,7 @@ class Add(Menu):
                 self.set_unsaved()
 
     def option_str(self):
-        return "Path: {}\n{}".format(' > '.join(self._path), super(Add, self).option_str())
+        return "Path: {}\n{}".format(' > '.join(map(str, self._path)), super(Add, self).option_str())
         
     def reset_items(self):
         self._items = self.tasktree.keys_from_path(self._path)
