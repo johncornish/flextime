@@ -62,7 +62,11 @@ class Menu:
         self._unsaved = True
         
     def set_quit(self, *args):
-        self._exit = True
+        if self.unsaved_changes():
+            if click.confirm('Exit without saving?'):
+                self._exit = True
+        else:
+            self._exit = True
 
     def select_item(self, page_item_index):
         pass
