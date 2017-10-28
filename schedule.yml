@@ -1,0 +1,59 @@
+CCIT:
+  - resource_order:
+      - computer
+      - printer
+      - desk space
+      - paper
+    attention: 70
+
+  - days:
+      - mon
+      - wed
+      - fri
+    start: 8:15
+    end: 11:15
+
+  - days:
+      - tues
+    start: 13:00
+    end: 15:00
+
+  - days:
+      - thurs
+    start: 13:00
+    end: 16:00
+
+Webmaster:
+  resource_order:
+    - printer
+    - desk space
+    - paper
+    - computer
+  attention: 90
+  days:
+    - mon
+    - wed
+  start: 14:00
+  end: 16:00
+
+Homework time:
+  - resource_order:
+      - paper
+      - computer
+      - desk space
+    attention: 80
+
+  - days:
+      - mon
+      - tues
+      - wed
+      - thurs
+      - fri
+    start: 18:00
+    end: 20:45
+
+  - days:
+      - fri
+    start: 14:00
+    end: 16:00
+    attention: 60

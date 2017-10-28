@@ -4,17 +4,13 @@ from datetime import datetime, date, timedelta
 from functools import reduce
 
 class TaskLeaf:
-    def date_to_str(d):
-        date_format = '%m-%d-%Y'
-        return d.strftime(date_format)
-        
     def __init__(self, path, data):
         self.path = path
         self.data = data
 
     def __str__(self):
         if '_d' in self.data:
-            due_str = TaskLeaf.date_to_str(dateutil.parser.parse(self.data.get('_d')))
+            due_str = utils.date_to_str(dateutil.parser.parse(self.data.get('_d')))
         else:
             due_str = 'No due date'
 
@@ -50,23 +46,13 @@ class TaskTree:
             self._datafile = datafile
 
         if isfile(self._datafile):
-            self._datatree = TaskTree.file_to_dict(self._datafile)
+            self._datatree = utils.file_to_dict(self._datafile)
         else:
             print("{} not found. It will be created on save.".format(self._datafile))
             self._datatree = {}
             
         self.normalize_tree()
 
-    def dump_dict(d):
-        return yaml.dump(d, default_flow_style=False)
-    
-    def file_to_dict(filename):
-        if isfile(filename):
-            with open(filename) as f:
-                return yaml.safe_load(f)
-        else:
-            print("{} not found; skipping.".format(filename))
-            
     def tree(self):
         return self._datatree
     
@@ -77,7 +63,7 @@ class TaskTree:
             f.write(output)
 
     def __str__(self):
-        return TaskTree.dump_dict(self._datatree)
+        return utils.dump_dict(self._datatree)
 
     def sorted_leaves(self, sort_keys):
         return sorted(self.leaves(), key = lambda x: x.toordinal(sort_keys))
@@ -111,7 +97,7 @@ class TaskTree:
                             due_date = dateutil.parser.parse(due_date)
                         except ValueError:
                             failed_props.append('_d')
-                    props['_d'] = TaskLeaf.date_to_str(due_date)
+                    props['_d'] = utils.date_to_str(due_date)
 
                 if '_t' in props:
                     time = props['_t']

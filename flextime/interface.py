@@ -154,15 +154,15 @@ class Add(Menu):
     def merge_files(self):
         if self.merge_files_present():
             merger = reduce(
-                lambda acc, f: {**acc, **flextime.TaskTree.file_to_dict(f)},
+                lambda acc, f: {**acc, **flextime.utils.file_to_dict(f)},
                 self._merge_files,
                 {}
             )
 
             click.echo('Current tree:')
-            click.echo(flextime.TaskTree.dump_dict(self.tasktree.branch_from_path(self._path)))
+            click.echo(flextime.utils.dump_dict(self.tasktree.branch_from_path(self._path)))
             click.echo('Tree from files:')
-            click.echo(flextime.TaskTree.dump_dict(merger))
+            click.echo(flextime.utils.dump_dict(merger))
 
             if click.confirm('Really merge?'):
                 self.tasktree.merge_branch(self._path, merger)
@@ -210,7 +210,7 @@ class Add(Menu):
             self.set_unsaved()
         
     def edit_yaml(self):
-        task_str = click.edit(flextime.TaskTree.dump_dict(self.tasktree.branch_from_path(self._path)))
+        task_str = click.edit(flextime.utils.dump_dict(self.tasktree.branch_from_path(self._path)))
         if task_str is not None:
             data = yaml.safe_load(task_str)
             self.tasktree.merge_branch(self._path, data)
