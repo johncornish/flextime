@@ -115,8 +115,8 @@ class Scheduler:
             if total_task_minutes + task.time() <= total_minutes:
                 total_task_minutes += task.time()
             else:
-                tasks = tasks[:j]
                 unscheduled_tasks = tasks[j:]
+                tasks = tasks[:j]
                 break
 
         graph.add_node('source', demand=-total_task_minutes)
