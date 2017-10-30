@@ -217,9 +217,9 @@ class Add(Menu):
             self.reset_items()
             self.set_unsaved()
     
-class Show(Menu):
+class List(Menu):
     def __init__(self, tasktree, sort_keys, **kwargs):
-        super(Show, self).__init__(tasktree, **kwargs)
+        super(List, self).__init__(tasktree, **kwargs)
         self.char_options['a'] = ('run [a]dd menu', self.run_add)
         self.char_option_display = [
             'wqa',

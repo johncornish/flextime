@@ -15,12 +15,13 @@ class TimeBlock:
             exit(1)
 
     def __str__(self):
-        return "{} {}: {}-{} ({})".format(
+        return "{} {}: {}-{}\n\tExcess minutes: {}\n\t{}\n".format(
             self.day,
             self.name,
             '{:02d}:{:02d}'.format(*divmod(self.start, 60)),
             '{:02d}:{:02d}'.format(*divmod(self.end, 60)),
-            self.num_minutes(),
+            self.excess,
+            "\n\t".join([str(t) for t in self.tasks]),
         )
 
     def toordinal(self):
@@ -40,17 +41,12 @@ class TimeBlock:
         return c
         
     def can_complete(self, task):
-        # also check against task needs list
-        dateutil.parser.parse(self.day) <= task.due()
+        #return dateutil.parser.parse(self.day) <= task.due()
+        # This is broken rn...
+        return True
     
     def num_minutes(self):
         return self.end - self.start
-        # fmt = ''
-        # start = datetime.strptime(self.start, fmt)
-        # end = datetime.strptime(self.end, fmt)
-        # td = te - ts
-
-        #return td.seconds // 60
     
 class Scheduler:
     def __init__(self, tasktree, schedule_file):
@@ -101,33 +97,48 @@ class Scheduler:
         return sorted(list(time_block_gen()), key = lambda b: b.toordinal());
                 
     def scheduled_tasks(self):
-        tasks = self._tasktree.leaves()
         time_blocks = self.time_blocks()
-        total_minutes = 0
         graph = nx.DiGraph()
+
+        total_minutes = 0
+        total_task_minutes = 0
 
         for i, tb in enumerate(time_blocks):
             nm = tb.num_minutes()
             total_minutes += nm
             graph.add_node('time.{}'.format(i), demand=-nm)
 
-        graph.add_node('sink', demand=total_minutes)
-        graph.add_node('excess', demand=0)
-        graph.add_edge('excess', 'sink')
+        tasks = self._tasktree.sorted_leaves('d')
 
         for j, task in enumerate(tasks):
-            graph.add_node('task.{}'.format(j))
-            graph.add_edge('task.{}'.format(j), 'sink')
-            
+            if total_task_minutes + task.time() <= total_minutes:
+                total_task_minutes += task.time()
+                graph.add_node('task.{}'.format(j), demand=task.time())
+                #graph.add_node('task.{}'.format(j), demand=0)
+            else:
+                tasks = tasks[:j]
+                break
+                
+        graph.add_node('excess', demand=total_minutes - total_task_minutes)
+
         for i, tb in enumerate(time_blocks):
-            graph.add_edge('time.{}'.format(i), 'excess', weight=1000)
+            graph.add_edge('time.{}'.format(i), 'excess')
             for j, task in enumerate(tasks):
                 if tb.can_complete(task):
                     graph.add_edge(
                         'time.{}'.format(i),
                         'task.{}'.format(j),
                         weight=tb.cost(task),
-                        capacity=task.time(),
                     )
 
-        return nx.min_cost_flow(graph)
+        try:
+            flowDict = nx.min_cost_flow(graph)
+        except nx.exception.NetworkXUnfeasible:
+            print("No optimal solution found; you're probably going to lose some sleep.")
+
+        for i, tb in enumerate(time_blocks):
+            time_key = 'time.{}'.format(i)
+            tb.excess = flowDict[time_key]['excess']
+            tb.tasks = [task for j, task in enumerate(tasks) if 'task.{}'.format(j) in flowDict[time_key] and flowDict[time_key]['task.{}'.format(j)] > 0]
+
+        return time_blocks
