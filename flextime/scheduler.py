@@ -100,6 +100,7 @@ class Scheduler:
 
         total_minutes = 0
         total_task_minutes = 0
+        unscheduled_tasks = []
 
         for i, tb in enumerate(time_blocks):
             total_minutes += tb.num_minutes()
@@ -112,6 +113,7 @@ class Scheduler:
                 total_task_minutes += task.time()
             else:
                 tasks = tasks[:j]
+                unscheduled_tasks = tasks[j:]
                 break
 
         graph.add_node('source', demand=-total_task_minutes)
@@ -141,9 +143,6 @@ class Scheduler:
             time_key = 'time.{}'.format(i)
             tb.tasks = [task for j, task in enumerate(tasks) if 'task.{}'.format(j) in flowDict[time_key] and flowDict[time_key]['task.{}'.format(j)] > 0]
 
-        unscheduled_task_inds = [int(k.split('.')[1]) for k, v in flowDict['source'].items() if re.match('^task.[0-9]+', k) and v > 0]
-        if len(unscheduled_task_inds) > 0:
-            print('Unscheduled tasks:')
-            print('\t{}\n'.format('\n\t'.join([str(tasks[i]) for i in unscheduled_task_inds])))
+        unscheduled_tasks += [task for i, task in enumerate(tasks) if 'task.{}'.format(i) in flowDict['source'] and flowDict['source']['task.{}'.format(i)] > 0]
         
-        return time_blocks
+        return (unscheduled_tasks, time_blocks)

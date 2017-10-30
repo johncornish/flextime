@@ -26,5 +26,11 @@ def add(obj, path, merge_files):
 @click.pass_obj
 def show(obj, schedule_file):
     s = flextime.Scheduler(obj['tasktree'], schedule_file)
-    for t in s.scheduled_tasks():
+    unscheduled, tbs = s.scheduled_tasks()
+    
+    if len(unscheduled) > 0:
+        print('Unscheduled tasks:')
+        print('\t{}\n'.format('\n\t'.join([str(task) for task in unscheduled])))
+
+    for t in tbs:
         print(str(t))
