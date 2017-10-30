@@ -8,6 +8,7 @@ setup(
         'click',
         'python-dateutil',
         'PyYAML',
+        'networkx',
     ],
     entry_points='''
     [console_scripts]

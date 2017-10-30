@@ -6,31 +6,56 @@ from datetime import datetime
 
 class TimeBlock:
     def __init__(self, data):
-        self._data = data
+        required_keys = ['day', 'name', 'start', 'end', 'resource_order']
+        if all([k in data for k in required_keys]):
+            for k, v in data.items():
+                setattr(self, k, v)
+        else:
+            print('Missing required attributes in TimeBlock')
+            exit(1)
 
+    def __str__(self):
+        return "{} {}: {}-{} ({})".format(
+            self.day,
+            self.name,
+            '{:02d}:{:02d}'.format(*divmod(self.start, 60)),
+            '{:02d}:{:02d}'.format(*divmod(self.end, 60)),
+            self.num_minutes(),
+        )
+
+    def toordinal(self):
+        return (dateutil.parser.parse(self.day), self.start)
+    
+    def cost(self, task):
+        c = 0
+        diff_cost = 5
+        for i, r in enumerate(task.wants()):
+            if r in self.resource_order:
+                rind = self.resource_order.index(r)
+                diff = rind - i
+                c += diff_cost * (diff if diff > 0 else 0) * 0.9**i
+            else:
+                c += diff_cost * len(task.wants())
+
+        return c
+        
+    def can_complete(self, task):
+        # also check against task needs list
+        dateutil.parser.parse(self.day) <= task.due()
+    
     def num_minutes(self):
-        if all(k in self._data for k in ['start', 'end']):
-            start = datetime.strptime(self._data['start'], fmt)
-            end = datetime.strptime(self._data['end'], fmt)
-            td = te - ts
+        return self.end - self.start
+        # fmt = ''
+        # start = datetime.strptime(self.start, fmt)
+        # end = datetime.strptime(self.end, fmt)
+        # td = te - ts
 
-            return td.seconds // 60
+        #return td.seconds // 60
     
 class Scheduler:
     def __init__(self, tasktree, schedule_file):
-        self._days = [
-            'monday',
-            'tuesday',
-            'wednesday',
-            'thursday',
-            'friday',
-            'saturday',
-            'sunday',
-            'unknown',
-        ]
         self._tasktree = tasktree
         self._datatree = utils.file_to_dict(schedule_file)
-        self.build_graph()
 
         abbrevs = [
             (['mon', 'm'], 'monday'),
@@ -53,29 +78,56 @@ class Scheduler:
         return self.abbrev_map[day_abbrev] if day_abbrev in self.abbrev_map else 'unknown'
 
     def time_blocks(self):
-        day_map = dict.fromkeys(self._days, [])
+        def time_block_gen():
+            for k, v in self._datatree.items():
+                name = k
+                if isinstance(v, list) and len(v) > 1:
+                    base = v[0]
+                    time_defs = [dict(base, **d) for d in v[1:]]
+                elif isinstance(v, dict):
+                    base = v
+                    time_defs = [v]
+                else:
+                    print('Wtf are you putting in your schedule config?')
+                    exit(1)
 
-        for k, v in self._datatree.items():
-            name = k
-            if isinstance(v, list) and len(v) > 1:
-                base = v[0]
-                time_defs = [dict(base, **d) for d in v[1:]]
-            elif isinstance(v, dict):
-                time_defs = [v]
-            else:
-                print('Wtf are you putting in your schedule config?')
-                exit(1)
+                for d in time_defs:
+                    if 'days' in d:
+                        for day in d['days']:
+                            day = self.expand_day(day)
+                            block = dict(base, name=k, start=d['start'], end=d['end'], day=day)
+                            yield TimeBlock(block)
 
-            for d in time_defs:
-                if 'days' in d:
-                    for day in d['days']:
-                        day = self.expand_day(day)
-                        block = dict(base, start=d['start'], end=d['end'], day=day)
-                        day_map[day].append(TimeBlock(block))
-
-        return reduce(lambda acc, d: acc + day_map.get(d), self._days, [])
+        return sorted(list(time_block_gen()), key = lambda b: b.toordinal());
                 
-    def build_graph(self):
-        #tasks = self._tasktree.leaves()
-        #time_blocks = self.time_blocks()
-        pass
+    def scheduled_tasks(self):
+        tasks = self._tasktree.leaves()
+        time_blocks = self.time_blocks()
+        total_minutes = 0
+        graph = nx.DiGraph()
+
+        for i, tb in enumerate(time_blocks):
+            nm = tb.num_minutes()
+            total_minutes += nm
+            graph.add_node('time.{}'.format(i), demand=-nm)
+
+        graph.add_node('sink', demand=total_minutes)
+        graph.add_node('excess', demand=0)
+        graph.add_edge('excess', 'sink')
+
+        for j, task in enumerate(tasks):
+            graph.add_node('task.{}'.format(j))
+            graph.add_edge('task.{}'.format(j), 'sink')
+            
+        for i, tb in enumerate(time_blocks):
+            graph.add_edge('time.{}'.format(i), 'excess', weight=1000)
+            for j, task in enumerate(tasks):
+                if tb.can_complete(task):
+                    graph.add_edge(
+                        'time.{}'.format(i),
+                        'task.{}'.format(j),
+                        weight=tb.cost(task),
+                        capacity=task.time(),
+                    )
+
+        return nx.min_cost_flow(graph)

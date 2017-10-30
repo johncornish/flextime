@@ -20,6 +20,10 @@
 
 from flextime import Scheduler, TaskTree, utils
 
-s = Scheduler(TaskTree, 'schedule.yml')
+s = Scheduler(TaskTree(), 'schedule.yml')
 
-print(utils.dump_dict(s.time_blocks()))
+print(utils.dump_dict(s.scheduled_tasks()))
+# tbs = s.time_blocks()
+# for t in tbs:
+#     print(str(t))
+#print(utils.dump_dict(s.time_blocks()))

@@ -2,6 +2,7 @@ import yaml, re, dateutil.parser
 from os.path import isfile
 from datetime import datetime, date, timedelta
 from functools import reduce
+from flextime import utils
 
 class TaskLeaf:
     def __init__(self, path, data):
@@ -20,6 +21,19 @@ class TaskLeaf:
             self.data.get('_t', 0)
         )
 
+    # Make a more complete solution than these functions
+    def needs(self):
+        return self.data['_n'] if '_n' in self.data else []
+
+    def wants(self):
+        return self.data['_w'] if '_w' in self.data else []
+
+    def time(self):
+        return self.data['_t'] if '_t' in self.data else 0
+    
+    def due(self):
+        return dateutil.parser.parse(self.data['_d']) if '_d' in self.data else datetime.max
+        
     def toordinal(self, attrs):
         def get_ord(attr):
             val = 0
