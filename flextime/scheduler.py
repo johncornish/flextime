@@ -1,10 +1,11 @@
-import networkx as nx, dateutil.parser
+import networkx as nx, dateutil.parser, re
 
 from flextime import utils
 from functools import reduce
 from datetime import datetime
 
 class TimeBlock:
+    max_cost = 1000
     def __init__(self, data):
         required_keys = ['day', 'name', 'start', 'end', 'resource_order']
         if all([k in data for k in required_keys]):
@@ -15,12 +16,11 @@ class TimeBlock:
             exit(1)
 
     def __str__(self):
-        return "{} {}: {}-{}\n\tExcess minutes: {}\n\t{}\n".format(
+        return "{} {}: {}-{}\n\t{}\n".format(
             self.day,
             self.name,
             '{:02d}:{:02d}'.format(*divmod(self.start, 60)),
             '{:02d}:{:02d}'.format(*divmod(self.end, 60)),
-            self.excess,
             "\n\t".join([str(t) for t in self.tasks]),
         )
 
@@ -38,12 +38,10 @@ class TimeBlock:
             else:
                 c += diff_cost * len(task.wants())
 
-        return c
+        return c if c <= TimeBlock.max_cost else TimeBlock.max_cost
         
     def can_complete(self, task):
-        #return dateutil.parser.parse(self.day) <= task.due()
-        # This is broken rn...
-        return True
+        return dateutil.parser.parse(self.day) <= task.due()
     
     def num_minutes(self):
         return self.end - self.start
@@ -104,25 +102,27 @@ class Scheduler:
         total_task_minutes = 0
 
         for i, tb in enumerate(time_blocks):
-            nm = tb.num_minutes()
-            total_minutes += nm
-            graph.add_node('time.{}'.format(i), demand=-nm)
+            total_minutes += tb.num_minutes()
+            graph.add_node('time.{}'.format(i))
 
         tasks = self._tasktree.sorted_leaves('d')
 
         for j, task in enumerate(tasks):
             if total_task_minutes + task.time() <= total_minutes:
                 total_task_minutes += task.time()
-                graph.add_node('task.{}'.format(j), demand=task.time())
-                #graph.add_node('task.{}'.format(j), demand=0)
             else:
                 tasks = tasks[:j]
                 break
-                
-        graph.add_node('excess', demand=total_minutes - total_task_minutes)
+
+        graph.add_node('source', demand=-total_task_minutes)
+
+        for j, task in enumerate(tasks):
+            graph.add_node('task.{}'.format(j), demand=task.time())
+            graph.add_edge('source', 'task.{}'.format(j), weight=TimeBlock.max_cost + 1)
+
 
         for i, tb in enumerate(time_blocks):
-            graph.add_edge('time.{}'.format(i), 'excess')
+            graph.add_edge('source', 'time.{}'.format(i), capacity=tb.num_minutes())
             for j, task in enumerate(tasks):
                 if tb.can_complete(task):
                     graph.add_edge(
@@ -135,10 +135,15 @@ class Scheduler:
             flowDict = nx.min_cost_flow(graph)
         except nx.exception.NetworkXUnfeasible:
             print("No optimal solution found; you're probably going to lose some sleep.")
+            exit(1)
 
         for i, tb in enumerate(time_blocks):
             time_key = 'time.{}'.format(i)
-            tb.excess = flowDict[time_key]['excess']
             tb.tasks = [task for j, task in enumerate(tasks) if 'task.{}'.format(j) in flowDict[time_key] and flowDict[time_key]['task.{}'.format(j)] > 0]
 
+        unscheduled_task_inds = [int(k.split('.')[1]) for k, v in flowDict['source'].items() if re.match('^task.[0-9]+', k) and v > 0]
+        if len(unscheduled_task_inds) > 0:
+            print('Unscheduled tasks:')
+            print('\t{}\n'.format('\n\t'.join([str(tasks[i]) for i in unscheduled_task_inds])))
+        
         return time_blocks
