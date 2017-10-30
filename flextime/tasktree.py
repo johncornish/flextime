@@ -26,7 +26,7 @@ class TaskLeaf:
         return self.data['_n'] if '_n' in self.data else []
 
     def wants(self):
-        return self.data['_w'] if '_w' in self.data else []
+        return self.needs() + (self.data['_w'] if '_w' in self.data else [])
 
     def time(self):
         return self.data['_t'] if '_t' in self.data else 0

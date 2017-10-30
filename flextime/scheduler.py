@@ -41,7 +41,10 @@ class TimeBlock:
         return c if c <= TimeBlock.max_cost else TimeBlock.max_cost
         
     def can_complete(self, task):
-        return dateutil.parser.parse(self.day) <= task.due()
+        within_due = dateutil.parser.parse(self.day) <= task.due()
+        needs_satisfied = all([(n in self.resource_order) for n in task.needs()])
+
+        return within_due and needs_satisfied
     
     def num_minutes(self):
         return self.end - self.start
