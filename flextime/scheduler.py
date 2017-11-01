@@ -38,10 +38,16 @@ class TimeBlock:
             else:
                 c += diff_cost * len(task.wants())
 
+        days_between = (task.due() - self.day_date()).days
+        c *= 0.9**days_between
+        
         return c if c <= TimeBlock.max_cost else TimeBlock.max_cost
         
+    def day_date(self):
+        return dateutil.parser.parse(self.day)
+
     def can_complete(self, task):
-        within_due = dateutil.parser.parse(self.day) <= task.due()
+        within_due = self.day_date() <= task.due()
         needs_satisfied = all([(n in self.resource_order) for n in task.needs()])
 
         return within_due and needs_satisfied
