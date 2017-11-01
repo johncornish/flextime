@@ -22,6 +22,7 @@ class Menu:
             'p': ('[p]rev page', self.prev_page, self.has_prev_page),
         }
         self.cond_options = [(lambda x: x.isdigit(), self.select_item)]
+        self.char_option_display = ['wq', 'pn']
 
     def run(self):
         while not self._exit:
@@ -94,7 +95,7 @@ class Menu:
         start = 0 + 10*self.page_offset
         end = 10 + 10*self.page_offset
 
-        if start < len(self._items):
+        if start < len(self._items) and self.pagify:
             return self._items[start:end]
         else:
             return self._items
@@ -118,7 +119,7 @@ class Menu:
         ])
                 
     def item_str(self):
-        items = self.get_page_items() if self.pagify else self._items
+        items = self.get_page_items()
         return "\n".join(["[{}] {}".format(i, str(item)) for i, item in enumerate(items)])
     
     def prev_page(self):
@@ -249,3 +250,53 @@ class List(Menu):
             self.tasktree.delete_branch(leaf.path)
             self.reset_items()
             self.set_unsaved()
+
+class Show(Menu):
+    def __init__(self, tasktree, schedule_file, **kwargs):
+        super(Show, self).__init__(tasktree, **kwargs)
+        self.schedule_file = schedule_file
+
+        self.reset_schedule()
+        self.reset_items()
+        
+    def reset_schedule(self):
+        scheduler = flextime.Scheduler(self.tasktree, self.schedule_file)
+        self.unscheduled, self.time_blocks = scheduler.scheduled_tasks()
+        
+    def reset_items(self):
+        utups = [(-1, i, task) for i, task in enumerate(self.unscheduled)]
+        ttups = [(i, ti, task) for i, tb in enumerate(self.time_blocks) for ti, task in enumerate(tb.tasks) if tb.has_tasks()]
+        self._items = utups + ttups
+
+    def select_item(self, page_item_index):
+        item = self.get_item(page_item_index)
+        
+        if item:
+            tb_ind, task_ind, task = item
+            
+            self.tasktree.complete_task(task)
+            if tb_ind == -1:
+                self.unscheduled.pop(task_ind)
+            else:
+                self.time_blocks[tb_ind].tasks.pop(task_ind)
+
+            self.reset_items()
+            self.set_unsaved()
+
+    def item_str(self):
+        items = self.get_page_items()
+        ret_lines = []
+        prev_tb = -2
+
+        for i, item in enumerate(items):
+            tb_ind, task_ind, task = item
+            if tb_ind != prev_tb:
+                if tb_ind == -1:
+                    ret_lines.append('Unscheduled')
+                else:
+                    ret_lines.append(str(self.time_blocks[tb_ind]))
+
+            prev_tb = tb_ind
+            ret_lines.append(' [{}] {}'.format(i, str(task)))
+
+        return '\n'.join(ret_lines)

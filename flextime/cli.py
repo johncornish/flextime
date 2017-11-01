@@ -1,6 +1,6 @@
 import click, os
 import flextime
-from flextime.interface import List, Add
+from flextime.interface import List, Add, Show
 
 @click.group()
 @click.option('--datafile', '-f', default='tasks.yml')
@@ -28,12 +28,4 @@ def add(obj, path, merge_files):
 @click.pass_obj
 def show(obj, schedule_file):
     """Attempt to optimally schedule tasks against blocks of time configured in a schedule file."""
-    s = flextime.Scheduler(obj['tasktree'], schedule_file)
-    unscheduled, tbs = s.scheduled_tasks()
-    
-    if len(unscheduled) > 0:
-        print('Unscheduled tasks:')
-        print('\t{}\n'.format('\n\t'.join([str(task) for task in unscheduled])))
-
-    for t in tbs:
-        print(str(t))
+    Show(obj['tasktree'], schedule_file).run()

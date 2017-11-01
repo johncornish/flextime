@@ -16,13 +16,13 @@ class TimeBlock:
             exit(1)
 
     def __str__(self):
-        return "{} {}: {}-{}\n\t{}\n".format(
+        return "{} - {} ({}-{})".format(
             self.day,
             self.name,
             '{:02d}:{:02d}'.format(*divmod(self.start, 60)),
             '{:02d}:{:02d}'.format(*divmod(self.end, 60)),
-            "\n\t".join([str(t) for t in self.tasks]),
         )
+            #"\n\t".join([str(t) for t in self.tasks]),
 
     def toordinal(self):
         return (dateutil.parser.parse(self.day), self.start)
@@ -51,6 +51,9 @@ class TimeBlock:
         needs_satisfied = all([(n in self.resource_order) for n in task.needs()])
 
         return within_due and needs_satisfied
+    
+    def has_tasks(self):
+        return len(self.tasks) > 0
     
     def num_minutes(self):
         return self.end - self.start

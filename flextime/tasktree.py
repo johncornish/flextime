@@ -175,3 +175,7 @@ class TaskTree:
             node = node[p]
 
         return node
+
+    def complete_task(self, task):
+        self.delete_branch(task.path)
+        # update completion time / save
