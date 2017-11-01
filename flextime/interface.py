@@ -213,7 +213,7 @@ class Add(Menu):
         task_str = click.edit(flextime.utils.dump_dict(self.tasktree.branch_from_path(self._path)))
         if task_str is not None:
             data = yaml.safe_load(task_str)
-            self.tasktree.merge_branch(self._path, data)
+            self.tasktree.replace_branch(self._path, data)
             self.reset_items()
             self.set_unsaved()
     

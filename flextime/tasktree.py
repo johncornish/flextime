@@ -144,6 +144,13 @@ class TaskTree:
     def keys_from_path(self, path):
         return [k for k in self.branch_from_path(path).keys() if not re.match('^_.*', str(k))]
                     
+    def replace_branch(self, path, data):
+        if len(path) > 0:
+            node = self.branch_from_path(path[:-1])
+            node[path[-1]] = data
+        else:
+            self._datatree = data
+            
     def merge_branch(self, path, data):
         node = self.branch_from_path(path)
         node.update(data)
