@@ -15,11 +15,11 @@ class TaskLeaf:
         else:
             due_str = 'No due date'
 
-        return '({}) {} - {} mins'.format(
+        return '({}) {}'.format(
             due_str,
             ' > '.join([str(n) for n in self.path]),
-            self.data.get('_t', 0)
         )
+            #self.data.get('_t', 0)
 
     # Make a more complete solution than these functions
     def needs(self):

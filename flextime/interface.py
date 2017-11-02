@@ -273,6 +273,7 @@ class Show(Menu):
         
         if item:
             tb_ind, task_ind, task = item
+            tmins, task = task
             
             self.tasktree.complete_task(task)
             if tb_ind == -1:
@@ -290,6 +291,8 @@ class Show(Menu):
 
         for i, item in enumerate(items):
             tb_ind, task_ind, task = item
+            tmins, task = task
+            
             if tb_ind != prev_tb:
                 if tb_ind == -1:
                     ret_lines.append('Unscheduled')
@@ -297,6 +300,6 @@ class Show(Menu):
                     ret_lines.append(str(self.time_blocks[tb_ind]))
 
             prev_tb = tb_ind
-            ret_lines.append(' [{}] {}'.format(i, str(task)))
+            ret_lines.append(' [{}] ({} / {}) {}'.format(i, tmins, task.time(), str(task)))
 
         return '\n'.join(ret_lines)

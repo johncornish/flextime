@@ -170,8 +170,10 @@ class Scheduler:
         for i, tb in enumerate(time_blocks):
             time_key = 'time.{}'.format(i)
             #tb.task_minutes = [task for j, task in enumerate(tasks) if 'task.{}'.format(j) in flowDict[time_key] and flowDict[time_key]['task.{}'.format(j)] > 0]
-            tb.tasks = [task for j, task in enumerate(tasks) if 'task.{}'.format(j) in flowDict[time_key] and flowDict[time_key]['task.{}'.format(j)] > 0]
+            tb.tasks = [(flowDict[time_key]['task.{}'.format(j)], task) for j, task in enumerate(tasks)
+                        if 'task.{}'.format(j) in flowDict[time_key] and flowDict[time_key]['task.{}'.format(j)] > 0]
 
-        unscheduled_tasks = [task for i, task in enumerate(tasks) if 'task.{}'.format(i) in flowDict['source'] and flowDict['source']['task.{}'.format(i)] > 0]
+        unscheduled_tasks = [(flowDict['source']['task.{}'.format(i)], task) for i, task in enumerate(tasks)
+                             if 'task.{}'.format(i) in flowDict['source'] and flowDict['source']['task.{}'.format(i)] > 0]
         
         return (unscheduled_tasks, time_blocks)
