@@ -32,7 +32,7 @@ class TaskLeaf:
         return self.data['_t'] if '_t' in self.data else 0
     
     def due(self):
-        return dateutil.parser.parse(self.data['_d']) if '_d' in self.data else datetime.max
+        return dateutil.parser.parse(self.data['_d']) if '_d' in self.data else datetime.today() + timedelta(days=7)
         
     def toordinal(self, attrs):
         def get_ord(attr):

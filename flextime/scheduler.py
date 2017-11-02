@@ -7,7 +7,8 @@ from datetime import datetime
 class TimeBlock:
     max_cost = 1000
     def __init__(self, data):
-        required_keys = ['day', 'name', 'start', 'end', 'resource_order']
+        required_keys = ['day', 'name', 'start', 'end', 'resource_tiers']
+        self.task_minutes = []
         if all([k in data for k in required_keys]):
             for k, v in data.items():
                 setattr(self, k, v)
@@ -22,33 +23,42 @@ class TimeBlock:
             '{:02d}:{:02d}'.format(*divmod(self.start, 60)),
             '{:02d}:{:02d}'.format(*divmod(self.end, 60)),
         )
-            #"\n\t".join([str(t) for t in self.tasks]),
 
     def toordinal(self):
         return (dateutil.parser.parse(self.day), self.start)
     
     def cost(self, task):
-        c = 0
-        diff_cost = 5
-        for i, r in enumerate(task.wants()):
-            if r in self.resource_order:
-                rind = self.resource_order.index(r)
-                diff = rind - i
-                c += diff_cost * (diff if diff > 0 else 0) * 0.9**i
-            else:
-                c += diff_cost * len(task.wants())
+        cost = 10
+        
+        offset_cost = 10
+        offset_multiplier = 2
+        missing_multiplier = len(self.resource_tiers)
+        for r in task.wants():
+            offset_exponent = next(i for i, tier in enumerate(self.resource_tiers) if r in tier)
+            if offset_exponent == 0:
+                offset_exponent = missing_multiplier
+            cost *= offset_multiplier**offset_exponent
+
+        attrition_rate = 0.9
 
         days_between = (task.due() - self.day_date()).days
-        c *= 0.9**days_between
+        cost *= attrition_rate**days_between if days_between > 0 else 1
         
-        return c if c <= TimeBlock.max_cost else TimeBlock.max_cost
+        cost = int(cost)
+        return cost if cost <= TimeBlock.max_cost else TimeBlock.max_cost
         
     def day_date(self):
         return dateutil.parser.parse(self.day)
 
+    def resources(self):
+        if isinstance(self.resource_tiers[0], list):
+            return [item for sublist in self.resource_tiers for item in sublist]
+        else:
+            return self.resource_tiers
+        
     def can_complete(self, task):
         within_due = self.day_date() <= task.due()
-        needs_satisfied = all([(n in self.resource_order) for n in task.needs()])
+        needs_satisfied = all([(n in self.resources()) for n in task.needs()])
 
         return within_due and needs_satisfied
     
@@ -112,7 +122,6 @@ class Scheduler:
 
         total_minutes = 0
         total_task_minutes = 0
-        unscheduled_tasks = []
 
         for i, tb in enumerate(time_blocks):
             total_minutes += tb.num_minutes()
@@ -121,12 +130,7 @@ class Scheduler:
         tasks = self._tasktree.sorted_leaves('d')
 
         for j, task in enumerate(tasks):
-            if total_task_minutes + task.time() <= total_minutes:
-                total_task_minutes += task.time()
-            else:
-                unscheduled_tasks = tasks[j:]
-                tasks = tasks[:j]
-                break
+            total_task_minutes += task.time()
 
         graph.add_node('source', demand=-total_task_minutes)
 
@@ -151,10 +155,23 @@ class Scheduler:
             print("No optimal solution found; you're probably going to lose some sleep.")
             exit(1)
 
+        # Need to be returning tuples of number of minutes that go toward the task
+        # and putting tasks with 0 time in unscheduled_tasks
+        # for k, v in flowDict.items():
+        #     if k == 'source':
+        #         unscheduled_tasks
+        #     else:
+        #         time_ind = k.split('.')[1]
+        #         for dest, mins in v.items():
+        #             if mins > 0:
+        #                 task_ind = dest.split('.')[1]
+                        
+        #                 time_blocks[time_ind].task_minutes.append((mins, tasks[task_ind]))
         for i, tb in enumerate(time_blocks):
             time_key = 'time.{}'.format(i)
+            #tb.task_minutes = [task for j, task in enumerate(tasks) if 'task.{}'.format(j) in flowDict[time_key] and flowDict[time_key]['task.{}'.format(j)] > 0]
             tb.tasks = [task for j, task in enumerate(tasks) if 'task.{}'.format(j) in flowDict[time_key] and flowDict[time_key]['task.{}'.format(j)] > 0]
 
-        unscheduled_tasks += [task for i, task in enumerate(tasks) if 'task.{}'.format(i) in flowDict['source'] and flowDict['source']['task.{}'.format(i)] > 0]
+        unscheduled_tasks = [task for i, task in enumerate(tasks) if 'task.{}'.format(i) in flowDict['source'] and flowDict['source']['task.{}'.format(i)] > 0]
         
         return (unscheduled_tasks, time_blocks)
