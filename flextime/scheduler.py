@@ -17,11 +17,13 @@ class TimeBlock:
             exit(1)
 
     def __str__(self):
-        return "{} - {} ({}-{})".format(
+        return "{} - {} ({}-{}) [{} / {}]".format(
             self.day,
             self.name,
             '{:02d}:{:02d}'.format(*divmod(self.start, 60)),
             '{:02d}:{:02d}'.format(*divmod(self.end, 60)),
+            self.effective_minutes(),
+            self.num_minutes(),
         )
 
     def toordinal(self):
@@ -65,6 +67,15 @@ class TimeBlock:
     def has_tasks(self):
         return len(self.tasks) > 0
     
+    def attention_ratio(self):
+        if hasattr(self, 'attention'):
+            return self.attention / 100.0
+        else:
+            return 1
+        
+    def effective_minutes(self):
+        return int((self.end - self.start) * self.attention_ratio())
+
     def num_minutes(self):
         return self.end - self.start
     
@@ -140,7 +151,7 @@ class Scheduler:
 
 
         for i, tb in enumerate(time_blocks):
-            graph.add_edge('source', 'time.{}'.format(i), capacity=tb.num_minutes())
+            graph.add_edge('source', 'time.{}'.format(i), capacity=tb.effective_minutes())
             for j, task in enumerate(tasks):
                 if tb.can_complete(task):
                     graph.add_edge(
