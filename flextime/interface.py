@@ -218,17 +218,14 @@ class Add(Menu):
             self.reset_items()
             self.set_unsaved()
     
-class List(Menu):
-    def __init__(self, tasktree, sort_keys, **kwargs):
-        super(List, self).__init__(tasktree, **kwargs)
+class SubMenu(Menu):
+    def __init__(self, tasktree, **kwargs):
+        super(SubMenu, self).__init__(tasktree, **kwargs)
         self.char_options['a'] = ('run [a]dd menu', self.run_add)
         self.char_option_display = [
             'wqa',
             'pn',
         ]
-
-        self._sort_keys = sort_keys
-        self.reset_items()
 
     def run_add(self):
         a = Add(self.tasktree, [], [])
@@ -239,7 +236,14 @@ class List(Menu):
         self.tasktree = a.tasktree
         self._unsaved = a.unsaved_changes()
         self.reset_items()
-        
+    
+class List(SubMenu):
+    def __init__(self, tasktree, sort_keys, **kwargs):
+        super(List, self).__init__(tasktree, **kwargs)
+
+        self._sort_keys = sort_keys
+        self.reset_items()
+
     def reset_items(self):
         self._items = self.tasktree.sorted_leaves(self._sort_keys)
         
@@ -251,14 +255,20 @@ class List(Menu):
             self.reset_items()
             self.set_unsaved()
 
-class Show(Menu):
+class Show(SubMenu):
     def __init__(self, tasktree, schedule_file, **kwargs):
         super(Show, self).__init__(tasktree, **kwargs)
         self.schedule_file = schedule_file
+        self.char_options['r'] = ('[r]eload solution', self.reset_solution)
+        self.char_option_display = ['wqra', 'pn']
 
         self.reset_schedule()
         self.reset_items()
         
+    def reset_solution(self):
+        self.reset_schedule()
+        self.reset_items()
+
     def reset_schedule(self):
         scheduler = flextime.Scheduler(self.tasktree, self.schedule_file)
         self.unscheduled, self.time_blocks = scheduler.scheduled_tasks()
