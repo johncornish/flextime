@@ -126,7 +126,7 @@ class Scheduler:
 
                             tb = TimeBlock(block)
                             n = datetime.now()
-                            if 60*n.hour + n.minute < tb.end:
+                            if not (tb.day_date().day == n.day and 60*n.hour + n.minute > tb.end):
                                 yield tb
 
         return sorted(list(time_block_gen()), key = lambda b: b.toordinal());
