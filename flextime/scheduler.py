@@ -123,7 +123,11 @@ class Scheduler:
                         for day in d['days']:
                             day = self.expand_day(day)
                             block = dict(base, name=k, start=d['start'], end=d['end'], day=day)
-                            yield TimeBlock(block)
+
+                            tb = TimeBlock(block)
+                            n = datetime.now()
+                            if 60*n.hour + n.minute < tb.end:
+                                yield tb
 
         return sorted(list(time_block_gen()), key = lambda b: b.toordinal());
                 
