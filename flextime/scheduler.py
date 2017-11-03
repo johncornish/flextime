@@ -43,9 +43,14 @@ class TimeBlock:
 
         attrition_rate = 0.9
 
+        early_threshold = 7
         days_between = (task.due() - self.day_date()).days
-        cost *= attrition_rate**days_between if days_between > 0 else 1
-        
+        early_multiplier = attrition_rate**days_between if days_between > 0 else 1
+        if days_between < early_threshold:
+            cost *= early_multiplier
+        else:
+            cost /= early_multiplier
+            
         cost = int(cost)
         return cost if cost <= TimeBlock.max_cost else TimeBlock.max_cost
         
