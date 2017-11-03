@@ -36,7 +36,7 @@ class TimeBlock:
         offset_multiplier = 2
         missing_multiplier = len(self.resource_tiers)
         for r in task.wants():
-            offset_exponent = next(i for i, tier in enumerate(self.resource_tiers) if r in tier)
+            offset_exponent = next((i for i, tier in enumerate(self.resource_tiers) if r in tier), missing_multiplier)
             if offset_exponent == 0:
                 offset_exponent = missing_multiplier
             cost *= offset_multiplier**offset_exponent
