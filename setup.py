@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='flextime',
     version='0.1',
-    py_modules=['flextime'],
+    packages=['flextime'],
     install_requires=[
         'click',
         'python-dateutil',
