@@ -9,6 +9,8 @@ structure your `tasks.yml` and `schedule.yml`.
 
 `pip install flextime`
 
+Note: this package requires Python 3.
+
 This will install the package and provide the executable `ft` (if
 you've properly configured your Python environment).
 
