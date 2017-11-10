@@ -176,21 +176,8 @@ class Scheduler:
             print("No optimal solution found; you're probably going to lose some sleep.")
             exit(1)
 
-        # Need to be returning tuples of number of minutes that go toward the task
-        # and putting tasks with 0 time in unscheduled_tasks
-        # for k, v in flowDict.items():
-        #     if k == 'source':
-        #         unscheduled_tasks
-        #     else:
-        #         time_ind = k.split('.')[1]
-        #         for dest, mins in v.items():
-        #             if mins > 0:
-        #                 task_ind = dest.split('.')[1]
-                        
-        #                 time_blocks[time_ind].task_minutes.append((mins, tasks[task_ind]))
         for i, tb in enumerate(time_blocks):
             time_key = 'time.{}'.format(i)
-            #tb.task_minutes = [task for j, task in enumerate(tasks) if 'task.{}'.format(j) in flowDict[time_key] and flowDict[time_key]['task.{}'.format(j)] > 0]
             tb.tasks = [(flowDict[time_key]['task.{}'.format(j)], task) for j, task in enumerate(tasks)
                         if 'task.{}'.format(j) in flowDict[time_key] and flowDict[time_key]['task.{}'.format(j)] > 0]
 

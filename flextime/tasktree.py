@@ -19,7 +19,6 @@ class TaskLeaf:
             due_str,
             ' > '.join([str(n) for n in self.path]),
         )
-            #self.data.get('_t', 0)
 
     # Make a more complete solution than these functions
     def needs(self):
@@ -195,4 +194,4 @@ class TaskTree:
 
     def complete_task(self, task):
         self.delete_branch(task.path)
-        # update completion time / save
+        # update completion time / save, if I ever implement time tracking

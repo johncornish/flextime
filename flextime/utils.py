@@ -11,7 +11,6 @@ def guess_path(tree, words):
         key = ' '.join(path_parts[-1])
         if key in tree:
             tree = tree[key]
-            #path_parts[-1] = key 
             path_parts.append([])
 
         return (tree, path_parts)
