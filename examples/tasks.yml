@@ -1,0 +1,28 @@
+# Currently a task must have estimated time to show up in the
+# scheduler, so it's a good idea to add a sensible default to
+# the root of the tree, as attributes propogate to children
+_t: 30
+
+Work:
+  # [_n]eeds; a timeblock must have these in order to complete the task.
+  _n:
+    - work
+    - computer
+  A work item:
+    # Available commands: today, tomorrow, <day of week> (fri, friday)
+    # and date in any sensible format (11/30, 11-30, 11-30-2017)
+    _d: today
+  A meeting or something:
+    # [_w]ants; a timeblock with these will be preferred
+    _w:
+      - paper
+      - desk space
+
+Home:
+  _n:
+    - home
+  Clean the kitchen:
+    _n:
+      # Properties in children override (not extend) parent
+      - home
+      - upkeep

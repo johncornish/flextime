@@ -1,0 +1,65 @@
+Work:
+  - resource_tiers:
+      -
+        # Your most prominent/effective resources
+        - computer
+        - desk space
+        - work
+      -
+        # Less effective resources or ones that can be better used elsewhere
+        - paper
+        - printer
+      # You can have as many tiers as you want
+      -
+        - finance
+
+    # Ratio of amount of actual time that's available,
+    # This can be tweaked to avoid overbooking in timeblocks
+    # where you might not be working as effectively.
+    attention: 70
+
+  # Subsequent items in the sequence extend the first item's configuration
+  - days:
+      - mon
+      - wed
+      - fri
+    start: 8:15
+    end: 11:15
+
+  - days:
+      - tues
+    start: 13:00
+    end: 15:00
+
+  - days:
+      - thurs
+    # 24-hour time
+    start: 13:00
+    end: 16:00
+
+Home:
+  resource_tiers:
+    -
+      # Resources are arbitrary strings signifying an
+      # attribute of a block of time that makes it good for
+      # a certain task
+      # Cleaning, cooking, and finance stuff are all good
+      # things to do at home instead of at work
+      - paper
+      - home
+      - upkeep
+      - finance
+    -
+      # Perhaps your work computer is better than your home computer
+      - computer
+  days:
+    # Shorthand for days is as follows
+    - m
+    - t
+    - w
+    - r
+    - f
+    - s
+    - u
+  start: 18:00
+  end: 22:00
