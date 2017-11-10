@@ -64,10 +64,11 @@ class TimeBlock:
             return self.resource_tiers
         
     def can_complete(self, task):
+        available = self.day_date() >= task.available()
         within_due = self.day_date() <= task.due()
         needs_satisfied = all([(n in self.resources()) for n in task.needs()])
 
-        return within_due and needs_satisfied
+        return available and within_due and needs_satisfied
     
     def has_tasks(self):
         return len(self.tasks) > 0

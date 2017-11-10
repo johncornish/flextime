@@ -33,6 +33,9 @@ class TaskLeaf:
     
     def due(self):
         return dateutil.parser.parse(self.data['_d']) if '_d' in self.data else datetime.today() + timedelta(days=7)
+
+    def available(self):
+        return dateutil.parser.parse(self.data['_a']) if '_a' in self.data else datetime.today()
         
     def toordinal(self, attrs):
         def get_ord(attr):
@@ -40,7 +43,7 @@ class TaskLeaf:
             attr_key = '_' + re.sub('\^', '', attr)
             if attr_key in self.data:
                 if attr_key == '_d':
-                    val = dateutil.parser.parse(self.data.get('_d')).toordinal()
+                    val = self.due().toordinal()
                 else:
                     val = self.data.get(attr_key)
 
@@ -96,22 +99,36 @@ class TaskTree:
         return list(recursive_find(self._datatree))
 
     def normalize_tree(self):
+        def normalize_date(d):
+            if d == 'today':
+                return datetime.today()
+            elif d == 'tomorrow':
+                return datetime.today() + timedelta(days=1)
+            elif not isinstance(d, date):
+                try:
+                    return dateutil.parser.parse(d)
+                except ValueError:
+                    return False
+            else:
+                return d
+        
         def normalize_props(path):
             failed_props = []
             props = self.props_from_path(path)
             if len(props) > 0:
                 if '_d' in props:
-                    due_date = props['_d']
-                    if due_date == 'today':
-                        due_date = datetime.today()
-                    elif due_date == 'tomorrow':
-                        due_date = datetime.today() + timedelta(days=1)
-                    elif not isinstance(due_date, date):
-                        try:
-                            due_date = dateutil.parser.parse(due_date)
-                        except ValueError:
-                            failed_props.append('_d')
-                    props['_d'] = utils.date_to_str(due_date)
+                    due_date = normalize_date(props['_d'])
+                    if due_date:
+                        props['_d'] = utils.date_to_str(due_date)
+                    else:
+                        failed_props.append('_d')
+
+                if '_a' in props:
+                    avail_date = normalize_date(props['_a'])
+                    if avail_date:
+                        props['_a'] = utils.date_to_str(avail_date)
+                    else:
+                        failed_props.append('_a')
 
                 if '_t' in props:
                     time = props['_t']
