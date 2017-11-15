@@ -255,6 +255,11 @@ class List(SubMenu):
             self.reset_items()
             self.set_unsaved()
 
+    def item_str(self):
+        items = self.get_page_items()
+        return "\n".join(["[{}] ({} min.) {}".format(i, item.time(), str(item)) for i, item in enumerate(items)])
+        
+
 class Show(SubMenu):
     def __init__(self, tasktree, schedule_file, **kwargs):
         super(Show, self).__init__(tasktree, **kwargs)

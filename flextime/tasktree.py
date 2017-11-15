@@ -39,14 +39,15 @@ class TaskLeaf:
     def toordinal(self, attrs):
         def get_ord(attr):
             val = 0
-            attr_key = '_' + re.sub('\^', '', attr)
+            print(attr)
+            attr_key = '_' + attr.lower()
             if attr_key in self.data:
                 if attr_key == '_d':
                     val = self.due().toordinal()
                 else:
                     val = self.data.get(attr_key)
 
-                if re.match('^\^.*', str(attr)):
+                if attr.isupper():
                     val = -val
 
             return val
