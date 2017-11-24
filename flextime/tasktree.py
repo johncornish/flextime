@@ -39,7 +39,6 @@ class TaskLeaf:
     def toordinal(self, attrs):
         def get_ord(attr):
             val = 0
-            print(attr)
             attr_key = '_' + attr.lower()
             if attr_key in self.data:
                 if attr_key == '_d':
