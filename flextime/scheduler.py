@@ -32,7 +32,6 @@ class TimeBlock:
     def cost(self, task):
         cost = 10
         
-        offset_cost = 10
         offset_multiplier = 2
         missing_multiplier = len(self.resource_tiers)
         for r in task.wants():
